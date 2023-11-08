@@ -1,0 +1,20 @@
+- hosts: worker
+  become: yes
+  #gather_facts: false
+  tasks:
+    - name: Copy join script to app server
+      copy:
+        src: /tmp/join_command.sh
+        dest: /tmp/
+        owner: root
+        group: root
+        mode: '0777'
+
+    - name: Run join script
+      shell: /tmp/join_command.sh
+
+ 
+
+
+
+
