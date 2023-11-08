@@ -1,0 +1,39 @@
+---
+- hosts: all
+  tasks:
+    - name: Reset Kubernetes on Master and Worker nodes
+      shell: kubeadm reset -f
+      when: "'master' in inventory_hostname or 'worker' in inventory_hostname"
+
+    - name: Uninstall Kubernetes components
+      apt:
+        name: kubelet,kubeadm,kubectl
+        state: absent
+
+    - name: Uninstall Containerd
+      apt:
+        name: containerd.io
+        state: absent
+
+    # Add tasks to remove Docker or other container runtimes if used.
+    
+    - name: Remove Kubernetes configuration files
+      file:
+        path: "{{ item }}"
+        state: absent
+      with_items:
+        - /etc/kubernetes/
+        - ~/.kube/
+
+    # Add tasks to clean up any other artifacts or custom configurations.
+
+- hosts: master
+  tasks:
+    - name: Remove Kubelet configuration
+      file:
+        path: /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
+        state: absent
+
+    # Add tasks to remove any other master-specific configurations.
+
+# Optionally, you can add more tasks to remove additional components or configurations specific to your setup.
