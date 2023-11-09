@@ -2,6 +2,11 @@
 - hosts: all
   become: yes
   tasks:
+    - name: Turn on SWAP
+      shell: |
+        swapon -a
+      ignore_errors: yes
+
     - name: Remove worker node from the cluster (only if worker)
       command: kubeadm reset -f
       when: "'worker' in inventory_hostname"
@@ -32,10 +37,5 @@
 
     - name: Delete Flannel CNI resources (only if Flannel was installed)
       shell: kubectl delete -f https://raw.githubusercontent.com/flannel-io/flannel/master/Documentation/kube-flannel.yml
-      ignore_errors: yes
-      when: "'master' in inventory_hostname"
-
-    - name: Remove Flannel CNI (only if Flannel was installed)
-      shell: kubectl delete daemonsets -n kube-system kube-flannel-ds-amd64
       ignore_errors: yes
       when: "'master' in inventory_hostname"
