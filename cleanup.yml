@@ -1,14 +1,17 @@
 ---
 - hosts: all
   tasks:
+    - name: Remove Flannel CNI
+      shell: kubectl delete daemonsets -n kube-system kube-flannel-ds-amd64
+      ignore_errors: yes
+
+    - name: Delete Flannel CNI resources
+      shell: kubectl delete -f https://raw.githubusercontent.com/flannel-io/flannel/master/Documentation/kube-flannel.yml
+      ignore_errors: yes
+
     - name: Reset Kubernetes on Master and Worker nodes
       shell: kubeadm reset -f
       when: "'master' in inventory_hostname or 'worker' in inventory_hostname"
-
-    - name: Uninstall Kubernetes components
-      apt:
-        name: kubelet,kubeadm,kubectl
-        state: absent
 
     - name: Uninstall Containerd
       apt:
@@ -16,6 +19,11 @@
         state: absent
 
     # Add tasks to remove Docker or other container runtimes if used.
+
+    - name: Uninstall Kubernetes components
+      apt:
+        name: kubelet,kubeadm,kubectl
+        state: absent
 
     - name: Remove Kubernetes configuration files
       file:
@@ -25,13 +33,10 @@
         - /etc/kubernetes/
         - ~/.kube/
 
-    - name: Delete Flannel CNI resources
-      shell: kubectl delete -f https://raw.githubusercontent.com/flannel-io/flannel/master/Documentation/kube-flannel.yml
-      ignore_errors: yes
-
-    - name: Remove Flannel CNI
-      shell: kubectl delete daemonsets -n kube-system kube-flannel-ds-amd64
-      ignore_errors: yes
+    - name: Uninstall kubectl
+      apt:
+        name: kubectl
+        state: absent
 
     - name: Reboot the nodes
       command: reboot
