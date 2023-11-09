@@ -16,7 +16,7 @@
         state: absent
 
     # Add tasks to remove Docker or other container runtimes if used.
-    
+
     - name: Remove Kubernetes configuration files
       file:
         path: "{{ item }}"
@@ -25,15 +25,18 @@
         - /etc/kubernetes/
         - ~/.kube/
 
-    # Add tasks to clean up any other artifacts or custom configurations.
+    - name: Delete Flannel CNI resources
+      shell: kubectl delete -f https://raw.githubusercontent.com/flannel-io/flannel/master/Documentation/kube-flannel.yml
+      ignore_errors: yes
 
-- hosts: master
-  tasks:
-    - name: Remove Kubelet configuration
-      file:
-        path: /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
-        state: absent
+    - name: Remove Flannel CNI
+      shell: kubectl delete daemonsets -n kube-system kube-flannel-ds-amd64
+      ignore_errors: yes
 
-    # Add tasks to remove any other master-specific configurations.
+    - name: Reboot the nodes
+      command: reboot
+      async: 0
+      poll: 0
+      when: "'master' in inventory_hostname or 'worker' in inventory_hostname"
 
 # Optionally, you can add more tasks to remove additional components or configurations specific to your setup.
