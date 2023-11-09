@@ -33,10 +33,6 @@
         - /etc/kubernetes/
         - ~/.kube/
 
-    - name: Uninstall kubectl
-      apt:
-        name: kubectl
-        state: absent
 
     - name: Reboot the nodes
       command: reboot
