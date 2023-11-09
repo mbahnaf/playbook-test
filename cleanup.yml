@@ -1,29 +1,26 @@
 ---
 - hosts: all
+  become: yes
   tasks:
-    - name: Remove Flannel CNI
-      shell: kubectl delete daemonsets -n kube-system kube-flannel-ds-amd64
-      ignore_errors: yes
+    - name: Remove worker node from the cluster (only if worker)
+      command: kubeadm reset -f
+      when: "'worker' in inventory_hostname"
 
-    - name: Delete Flannel CNI resources
-      shell: kubectl delete -f https://raw.githubusercontent.com/flannel-io/flannel/master/Documentation/kube-flannel.yml
-      ignore_errors: yes
+    - name: Remove Kubernetes components (on all nodes)
+      apt:
+        name: kubelet,kubeadm,kubectl
+        state: absent
 
-    - name: Reset Kubernetes on Master and Worker nodes
-      shell: kubeadm reset -f
-      when: "'master' in inventory_hostname or 'worker' in inventory_hostname"
-
-    - name: Uninstall Containerd
+    - name: Remove Containerd (on all nodes)
       apt:
         name: containerd.io
         state: absent
 
-    # Add tasks to remove Docker or other container runtimes if used.
-
-    - name: Uninstall Kubernetes components
+    - name: Remove Docker (if used) - Customize this task based on your container runtime
       apt:
-        name: kubelet,kubeadm,kubectl
+        name: docker-ce
         state: absent
+      ignore_errors: yes
 
     - name: Remove Kubernetes configuration files
       file:
@@ -33,11 +30,12 @@
         - /etc/kubernetes/
         - ~/.kube/
 
+    - name: Delete Flannel CNI resources (only if Flannel was installed)
+      shell: kubectl delete -f https://raw.githubusercontent.com/flannel-io/flannel/master/Documentation/kube-flannel.yml
+      ignore_errors: yes
+      when: "'master' in inventory_hostname"
 
-    - name: Reboot the nodes
-      command: reboot
-      async: 0
-      poll: 0
-      when: "'master' in inventory_hostname or 'worker' in inventory_hostname"
-
-# Optionally, you can add more tasks to remove additional components or configurations specific to your setup.
+    - name: Remove Flannel CNI (only if Flannel was installed)
+      shell: kubectl delete daemonsets -n kube-system kube-flannel-ds-amd64
+      ignore_errors: yes
+      when: "'master' in inventory_hostname"
